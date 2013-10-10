@@ -36,6 +36,12 @@ class MainForm(QtGui.QMainWindow):
 
 		self.coach = coach
 		self.coach_iter = iter(coach)
+
+		self.ok_count = 0
+		self.error_count = 0
+		self.words_count = 0
+
+		self.setStat()
 		self.setQuestion()
 
 		self.connect(self.OkButton, QtCore.SIGNAL("clicked()"),
@@ -53,11 +59,23 @@ class MainForm(QtGui.QMainWindow):
 		ans = self.Answer.text()
 		if self.task == ans.toUtf8():
 			self.coach.ok()
+			self.ok_count += 1
 			self.DAnswer.show_ok()
 		else:
 			self.coach.error()
+			self.error_count += 1
 			self.DAnswer.show_no()
+		self.words_count += 1
+		self.setStat();
 		self.setQuestion()
+	
+	def setStat(self):
+		self.tableWidget.item(0, 0).setText(str(self.words_count))
+		self.tableWidget.item(0, 1).setText(str(self.ok_count))
+		self.tableWidget.item(0, 2).setText(str(self.error_count))
+		self.tableWidget.item(0, 3).setText(str(len(self.coach)))
+		self.tableWidget.item(0, 4).setText(str(self.coach.new_count()))
+		self.tableWidget.item(0, 5).setText(str(self.coach.wcount()))
 
 
 def start(coach):

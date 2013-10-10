@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="windowModality">
+   <enum>Qt::NonModal</enum>
+  </property>
   <property name="enabled">
    <bool>true</bool>
   </property>
@@ -191,6 +194,9 @@ p, li { white-space: pre-wrap; }
       <height>181</height>
      </rect>
     </property>
+    <property name="mouseTracking">
+     <bool>false</bool>
+    </property>
     <property name="verticalScrollBarPolicy">
      <enum>Qt::ScrollBarAsNeeded</enum>
     </property>
@@ -200,8 +206,17 @@ p, li { white-space: pre-wrap; }
     <property name="autoScroll">
      <bool>true</bool>
     </property>
+    <property name="editTriggers">
+     <set>QAbstractItemView::NoEditTriggers</set>
+    </property>
     <property name="tabKeyNavigation">
-     <bool>true</bool>
+     <bool>false</bool>
+    </property>
+    <property name="showDropIndicator" stdset="0">
+     <bool>false</bool>
+    </property>
+    <property name="dragDropOverwriteMode">
+     <bool>false</bool>
     </property>
     <property name="showGrid">
      <bool>true</bool>
@@ -303,7 +318,7 @@ p, li { white-space: pre-wrap; }
     </column>
     <item row="0" column="0">
      <property name="text">
-      <string>0</string>
+      <string>123</string>
      </property>
      <property name="font">
       <font>

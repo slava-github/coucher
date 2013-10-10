@@ -64,7 +64,8 @@ class Coach:
 	def __pop(self, pos):
 		item = self.__wlist[pos] 
 		last = self.__wlist.pop()
-		if pos < len(self.__wlist): self.__wlist[pos] = last 
+		if pos < len(self.__wlist): 
+			self.__wlist[pos] = last 
 		self.__sum_weight -= item.weight
 		return item
 
@@ -72,6 +73,7 @@ class Coach:
 		while self.__sum_weight:
 			if self.nicount < NewItems:
 				self.__new_item()
+			print self.__wlist
 			r = random.randint(1, self.__sum_weight)
 			cur_sum = 0
 			for n, w in enumerate(self.__wlist):
@@ -81,7 +83,16 @@ class Coach:
 					yield w.data
 					self.__to_wait()
 					break
-	
+
+	def __len__(self):
+		return len(self.__items)
+
+	def new_count(self):
+		return self.nicount
+
+	def wcount(self):
+		return len(self.__wlist)
+
 	def cur_weight(self):
 		return self.cur_item.weight
 
