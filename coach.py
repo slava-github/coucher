@@ -32,7 +32,7 @@ class Item:
 	def inc(self):
 		self.level_changed = 0;
 		if self.level:
-			self.step = Steps
+			self.step = Steps-(2 if Steps > 2 else 1)
 			self.level -= 1
 			self.level_changed = 1
 		else:
@@ -180,12 +180,13 @@ def _test_item():
 		item.inc()
 		print 't3-', item.weight(), item.level, item.level_changed
 
-def _test_coach():
+def _test_all_ok():
 	c = Coach([(x, '', x, '') for x in range(11)])
 	for i in c:
 		print 't1-', i, c.cur_weight(), c.new_count(), c.studied_count()
 		c.ok()
 
+def _test_levelup():
 	c = Coach([(x, '', x, '') for x in range(3)])
 	it = iter(c)
 	x = it.next()
@@ -197,4 +198,4 @@ def _test_coach():
 	print 't2-', x, c.cur_weight(), c.new_count(), c.studied_count()
 
 if __name__ == '__main__':
-	_test_coach()
+	_test_levelup()
