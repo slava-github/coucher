@@ -2,29 +2,6 @@
 # -*- coding: utf-8 -*-
 from PyQt4 import QtCore, QtGui, uic  # подключает основные модули PyQt
 
-class Dialog(QtGui.QDialog):
-
-	def __init__(self):
-		super(Dialog, self).__init__()
-		uic.loadUi("answer.ui", self)
-		self.templ = (self.Text.toHtml().toUtf8()).data().decode('utf8')
-
-	def set_text(self, data):
-		s = self.templ
-		for key, val in zip([u'Question', u'question_desc', u'Answer', u'answer_desc'], data):
-			s = s.replace('$%s$' % key, val)
-		self.Text.setHtml(s)
-
-	def show_ok(self):
-		self.lOk.show()
-		self.lNo.hide()
-		self.show()
-
-	def show_no(self):
-		self.lNo.show()
-		self.lOk.hide()
-		self.show()
-
 # прототип главной формы
 class MainForm(QtGui.QMainWindow):
 
@@ -32,7 +9,10 @@ class MainForm(QtGui.QMainWindow):
 		super(MainForm, self).__init__()
 		uic.loadUi("test.ui", self)
 
-		self.DAnswer = Dialog()
+		self.templ = (self.Text.toHtml().toUtf8()).data().decode('utf8')
+		self.frame_2.hide()
+		self.state = 1
+
 
 		self.coach = coach
 		self.coach_iter = iter(coach)
@@ -41,8 +21,8 @@ class MainForm(QtGui.QMainWindow):
 		self.error_count = 0
 		self.words_count = 0
 
-		self.setStat()
 		self.setQuestion()
+		self.setStat()
 
 		self.connect(self.OkButton, QtCore.SIGNAL("clicked()"),
 			self.answerReady)
@@ -55,27 +35,55 @@ class MainForm(QtGui.QMainWindow):
 		self.Answer.setFocus()
 
 	def answerReady(self):
-		self.DAnswer.set_text(self.task.get_list());
-		ans = self.Answer.text()
-		if self.task == ans.toUtf8():
-			self.coach.ok()
-			self.ok_count += 1
-			self.DAnswer.show_ok()
+		if self.state:
+			ans = self.Answer.text()
+			if self.task == ans.toUtf8():
+				self.coach.ok()
+				self.ok_count += 1
+				self.show_ok()
+			else:
+				self.coach.error()
+				self.error_count += 1
+				self.show_no()
+			self.set_text(self.task.get_list(), self.coach.cur_weight());
+			self.frame_2.show()
+			self.state = 0
 		else:
-			self.coach.error()
-			self.error_count += 1
-			self.DAnswer.show_no()
-		self.words_count += 1
+			self.words_count += 1
+			self.setQuestion()
+			self.frame_2.hide()
+			self.state = 1
 		self.setStat();
-		self.setQuestion()
+
+	def set_text(self, data, status):
+		s = self.templ
+		for key, val in zip(['Question', 'question_desc', 'Answer', 'answer_desc', 'status'], data+[str(status)]):
+			s = s.replace('$%s$' % key, val)
+		self.Text.setHtml(s)
+
+	def show_ok(self):
+		self.lOk.show()
+		self.lNo.hide()
+
+	def show_no(self):
+		self.lNo.show()
+		self.lOk.hide()
 	
 	def setStat(self):
 		self.tableWidget.item(0, 0).setText(str(self.words_count))
 		self.tableWidget.item(0, 1).setText(str(self.ok_count))
 		self.tableWidget.item(0, 2).setText(str(self.error_count))
-		self.tableWidget.item(0, 3).setText(str(len(self.coach)))
+		self.tableWidget.item(0, 3).setText(
+				"%i (%i)" % (len(self.coach), 
+					len(self.coach) 
+					- self.coach.new_count() 
+					- self.coach.studied_count()
+					- self.coach.lesson_count()
+					)
+				)
 		self.tableWidget.item(0, 4).setText(str(self.coach.new_count()))
-		self.tableWidget.item(0, 5).setText(str(self.coach.wcount()))
+		self.tableWidget.item(0, 5).setText(str(self.coach.studied_count()))
+		self.tableWidget.item(0, 6).setText(str(self.coach.lesson_count()))
 
 
 def start(coach):

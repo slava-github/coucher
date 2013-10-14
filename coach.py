@@ -6,26 +6,55 @@ import pickle
 import os.path
 
 NewItems = 5
-MaxWeight = 100
-BarrerNewWord = 90
 
-
+Steps = 5
+MaxLevel = 3
+ProbStep = 10
 
 class Item:
-	def __init__(self, d, weight=0):
+	def __init__(self, d):
 		self.data = d
-		self.weight = weight
+		self.step = 0
+		self.level = 0
+		self.level_changed = 0;
+
+	def dec(self):
+		self.level_changed = 0;
+		if self.level < MaxLevel:
+			self.step += 1
+			if self.step >= Steps:
+				self.step = 0
+				self.level += 1 
+				self.level_changed = 1
+		else:
+			self.step = 1
+
+	def inc(self):
+		self.level_changed = 0;
+		if self.level:
+			self.step = Steps
+			self.level -= 1
+			self.level_changed = 1
+		else:
+			self.step = 0
+
+	def weight(self):
+		return (ProbStep**(MaxLevel - self.level)) - self.step
+
+	def __hash__(self):
+		return hash(self.data)
 
 class Coach:
 
 	def __init__(self, data = None):
-		self.__wlist = []
+		self.__log('init')
+		self.__wlist = [] #Список изучаемых элементов
 		self.nicount = 0
 		self.__sum_weight = 0
 		self.__wait_list = []
 		self.cur_item = None
 		self.file_name = None
-		self.__new_wlist = []
+		self.__new_wlist = [] #Лист ожидания (из него в __wlist)
 		self.__items = {}
 		if data: self.add(data)
 
@@ -35,16 +64,13 @@ class Coach:
 			if hash(item) not in self.__items:
 				self.__new_wlist.append(item)
 				self.__items[hash(item)] = item
-		if self.__items and not self.__wlist:
-			self.__log('new')
-			self.__new_item()
 
 	def __log(self, str):
 		print str
 
 	def __append(self, item):
-		if not item.weight: return
-		self.__sum_weight += item.weight
+		if not item.weight(): return
+		self.__sum_weight += item.weight()
 		self.__wlist.append(item)
 
 	def __new_item(self):
@@ -53,31 +79,33 @@ class Coach:
 		self.__log('+1')
 		self.nicount += 1
 		item = self.__new_wlist.pop(random.randint(0, len(self.__new_wlist)-1))
-		item.weight = MaxWeight
 		self.__append(item)
 
 	def __to_wait(self):
 		if self.__wait_list:
 			self.__append(self.__wait_list.pop(0))
 		self.__wait_list.append(self.cur_item)
+		self.cur_item = None
 
 	def __pop(self, pos):
 		item = self.__wlist[pos] 
 		last = self.__wlist.pop()
 		if pos < len(self.__wlist): 
 			self.__wlist[pos] = last 
-		self.__sum_weight -= item.weight
+		self.__sum_weight -= item.weight()
 		return item
 
 	def __iter__(self):
-		while self.__sum_weight:
+		if self.cur_item:
+			self.__append(self.cur_item);
+			self.cur_item = None
+		while self.__sum_weight or self.__new_wlist:
 			if self.nicount < NewItems:
 				self.__new_item()
-			print self.__wlist
 			r = random.randint(1, self.__sum_weight)
 			cur_sum = 0
 			for n, w in enumerate(self.__wlist):
-				cur_sum += w.weight
+				cur_sum += w.weight()
 				if r <= cur_sum:
 					self.cur_item = self.__pop(n)
 					yield w.data
@@ -90,23 +118,25 @@ class Coach:
 	def new_count(self):
 		return self.nicount
 
-	def wcount(self):
-		return len(self.__wlist)
+	def studied_count(self):
+		return len(self.__wlist) + len(self.__wait_list) + 1 - self.nicount 
+
+	def lesson_count(self):
+		return len(self.__items) - len(self.__new_wlist) - self.studied_count() - self.nicount
 
 	def cur_weight(self):
-		return self.cur_item.weight
+		return self.cur_item.weight()
 
 	def ok(self):
 		self.__log('ok')
-		self.cur_item.weight -= 1 if self.cur_item.weight > 0 else 0
-		if self.cur_item.weight == BarrerNewWord:
+		self.cur_item.dec()
+		if self.cur_item.level_changed and self.cur_item.level == 1:
 			self.nicount -= 1
-			self.cur_item.weight = BarrerNewWord / 2
 
 	def error(self):
 		self.__log('error')
-		self.cur_item.weight += 1
-		if self.cur_item.weight == BarrerNewWord + 1:
+		self.cur_item.inc()
+		if self.cur_item.level_changed and self.cur_item.level == 0:
 			self.nicount += 1
 
 def load(file_name):
@@ -132,12 +162,39 @@ class Task:
 		return self.answer == answer
 
 	def __hash__(self):
-		return self.question
+		return hash(self.question)
 
 
-def __main__():
-	pass
+def _test_item():
+	item = Item(1)
+	while item.weight():
+		print 't1-',item.weight(), item.level, item.level_changed
+		item.dec()
 
+	item.dec()
+	print 't2-', item.weight(), item.level, item.level_changed
+
+	last_weight = -1
+	while last_weight != item.weight():
+		last_weight = item.weight() 
+		item.inc()
+		print 't3-', item.weight(), item.level, item.level_changed
+
+def _test_coach():
+	c = Coach([(x, '', x, '') for x in range(11)])
+	for i in c:
+		print 't1-', i, c.cur_weight(), c.new_count(), c.studied_count()
+		c.ok()
+
+	c = Coach([(x, '', x, '') for x in range(3)])
+	it = iter(c)
+	x = it.next()
+	while c.new_count():
+		c.ok()
+		print 't2-', x, c.cur_weight(), c.new_count(), c.studied_count()
+
+	c.error()
+	print 't2-', x, c.cur_weight(), c.new_count(), c.studied_count()
 
 if __name__ == '__main__':
-	__main__()
+	_test_coach()
