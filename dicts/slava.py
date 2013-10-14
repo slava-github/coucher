@@ -4,7 +4,7 @@
 def plural():
 	sdata = u"""\
 wheel колесо wheels колеса
-hous дом houses дома
+house дом houses дома
 box коробка boxes коробки
 \
 shelf полка shelves полки

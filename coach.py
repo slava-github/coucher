@@ -103,6 +103,7 @@ class Coach:
 			if self.nicount < NewItems:
 				self.__new_item()
 			r = random.randint(1, self.__sum_weight)
+			self.__log('r = %i (%i)' % (r, self.__sum_weight));
 			cur_sum = 0
 			for n, w in enumerate(self.__wlist):
 				cur_sum += w.weight()
