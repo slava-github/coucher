@@ -23,7 +23,7 @@ deer олень deer олени
 mouse мышь mice мыши
 tooth зуб teeth зубы
 fish рыба fish рыбы
-foot ступны feet ступни
+foot ступня feet ступни
 louse вош lice вши
 goose гусь geese гуси
 sheep овца sheep овцы
