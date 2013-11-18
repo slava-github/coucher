@@ -11,7 +11,7 @@ Steps = 5
 MaxLevel = 3
 ProbStep = 10
 
-class Item:
+class Item(object):
 	def __init__(self, d):
 		self.data = d
 		self.step = 0
@@ -44,7 +44,7 @@ class Item:
 	def __hash__(self):
 		return hash(self.data)
 
-class Coach:
+class Coach(object):
 
 	def __init__(self, data = None):
 		self.__log('init')
@@ -151,16 +151,20 @@ def save(file_name, coach):
 		pickle.dump(coach, f)
 
 
-class Task:
+class Task(object):
 
 	def __init__(self, *prop):
-		self.question, self.ques_descr, self.answer, self.description = prop
+		if len(prop) == 1 and type(prop[0]) is dict:
+			for name in ('question', 'ques_descr', 'ques_sound', 'answer', 'description', 'sound'):
+				self.__setattr__(name, prop[0][name] if name in prop[0] else '')
+		else:
+			self.question, self.ques_descr, self.answer, self.description = prop
 
 	def get_list(self):
 		return [self.question, self.ques_descr, self.answer, self.description]
 
 	def __eq__(self, answer):
-		return self.answer == answer
+		return self.answer.find(answer) > -1
 
 	def __hash__(self):
 		return hash(self.question)
