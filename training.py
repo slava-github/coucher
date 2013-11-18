@@ -3,14 +3,11 @@
 
 import coach
 import gui
-
-import dicts.slava
+import sys
 
 if __name__ == '__main__':
-
-	file_name, data = dicts.slava.get()
-
+	
+	file_name = sys.argv[1]
 	c = coach.load(file_name)
-	c.add([coach.Task(*i) for i in data])
 	gui.start(c);
 	coach.save(file_name, c)
