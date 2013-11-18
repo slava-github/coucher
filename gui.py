@@ -7,7 +7,7 @@ class MainForm(QtGui.QMainWindow):
 
 	def __init__(self, coach):
 		super(MainForm, self).__init__()
-		uic.loadUi("test.ui", self)
+		uic.loadUi("ui/test.ui", self)
 
 		self.templ = (self.Text.toHtml().toUtf8()).data().decode('utf8')
 		self.frame_2.hide()
@@ -37,7 +37,7 @@ class MainForm(QtGui.QMainWindow):
 	def answerReady(self):
 		if self.state:
 			ans = self.Answer.text()
-			if self.task == ans.toUtf8():
+			if self.task == ans.toUtf8().data().decode('utf8'):
 				self.coach.ok()
 				self.ok_count += 1
 				self.show_ok()
@@ -57,9 +57,10 @@ class MainForm(QtGui.QMainWindow):
 
 	def set_text(self, data, status):
 		s = self.templ
-		for key, val in zip(['Question', 'question_desc', 'Answer', 'answer_desc', 'status'], data+[str(status)]):
-			s = s.replace('$%s$' % key, val)
+		for key, val in zip(['Question', 'question_desc', 'Answer', 'answer_desc'], data):
+			s = s.replace('$%s$' % key, val.replace('\n', "<br>"))
 		self.Text.setHtml(s)
+		self.Status.setText(str(status))
 
 	def show_ok(self):
 		self.lOk.show()
@@ -91,4 +92,4 @@ def start(coach):
 	form = MainForm(coach)  # создаёт объект формы
 	form.show()  # даёт команду на отображение объекта формы и содержимого
 	app.exec_()  # запускает приложение
- 
+
