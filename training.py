@@ -9,5 +9,5 @@ if __name__ == '__main__':
 	
 	file_name = sys.argv[1]
 	c = coach.load(file_name)
-	gui.start(c);
+	gui.start(c)
 	coach.save(file_name, c)
