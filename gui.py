@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from PyQt4 import QtCore, QtGui, uic  # подключает основные модули PyQt
+import playmp3
 
 # прототип главной формы
 class MainForm(QtGui.QMainWindow):
@@ -26,6 +27,10 @@ class MainForm(QtGui.QMainWindow):
 
 		self.connect(self.OkButton, QtCore.SIGNAL("clicked()"),
 			self.answerReady)
+		self.connect(self.DeleteButton, QtCore.SIGNAL("clicked()"),
+			self.deleteItem)
+		self.connect(self.PlayButton, QtCore.SIGNAL("clicked()"),
+			self.PlaySound)
  
 	def setQuestion(self):
 		self.task = self.coach_iter.next()
@@ -33,6 +38,7 @@ class MainForm(QtGui.QMainWindow):
 		self.textEdit.setText(self.task.ques_descr)
 		self.Answer.clear()
 		self.Answer.setFocus()
+		self.setSound('ques_sound')
 
 	def answerReady(self):
 		if self.state:
@@ -47,13 +53,32 @@ class MainForm(QtGui.QMainWindow):
 				self.show_no()
 			self.set_text(self.task.get_list(), self.coach.cur_weight());
 			self.frame_2.show()
+			self.setSound('sound')
 			self.state = 0
 		else:
 			self.words_count += 1
 			self.setQuestion()
 			self.frame_2.hide()
 			self.state = 1
-		self.setStat();
+		self.setStat()
+
+	def setSound(self, field):
+		print field
+		if hasattr(self.task, field) and getattr(self.task, field):
+			self.sound = getattr(self.task, field)
+			self.PlayButton.show()
+		else:
+			self.sound = None
+			self.PlayButton.hide()
+
+	def PlaySound(self):
+		if self.sound:
+			playmp3.play(self.sound)
+
+	def deleteItem(self):
+		print 'gui try delete task: ' + str(hash(self.task))
+		self.coach.delete(self.task)
+		self.setQuestion()
 
 	def set_text(self, data, status):
 		s = self.templ
