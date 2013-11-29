@@ -26,7 +26,7 @@ def getresponse(conn):
 class remote_dict(object):
 
 	host="lingualeo.ru"
-	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1;"}\
+	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1"}\
 
 	def __init__(self):
 		self.conn = httplib.HTTPConnection(self.host)
@@ -83,7 +83,7 @@ class dicts:
 						'ques_descr'	: u"[{}]\n{}".format(word['transcription'], word['context']),
 						'ques_sound'	: word['sound_url'],
 						'answer'		: word['user_translates'][0]['translate_value'],
-						'answer_list'	: re.split(r',\s*', word['user_translates'][0]['translate_value'].lower())
+						'answer_list'	: re.split(r'[,;]\s*', word['user_translates'][0]['translate_value'].lower())
 					})])
 					self.dicts['ru'].add([coach.Task({
 						'answer'		: word['word_value'], 
@@ -108,8 +108,17 @@ def main():
 	if len(sys.argv) < 2 or sys.argv[1] not in ('en', 'ru'):
 		raise Exception('usage: %s [en|ru]' % sys.argv[0])
 	_dicts = load()
-	if len(sys.argv) > 3 and sys.argv[1] == 'update':
-		print 1
+	if len(sys.argv) >= 3 and sys.argv[2] == 'update':
+		pass
+#		for i in _dicts.get('en').items().itervalues():
+#			if i.data.answer.find(u'ё') > -1:
+#				tst = re.split(r'[,;]\s*', i.data.answer)
+#				for w in i.data.answer_list:
+#					if w.find(u'ё') >-1:
+#						s = w.replace(u'ё', u'е')
+#						tst.append(s)
+#						i.data.answer += u', '+s
+#				i.data.answer_list = tst
 	else:
 		_dicts.sync()
 		_dicts.update()
