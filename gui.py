@@ -35,6 +35,7 @@ class MainForm(QtGui.QMainWindow):
 	def setQuestion(self):
 		self.task = self.coach_iter.next()
 		self.Question.setText(self.task.question)
+		self.Question.home(False)
 		self.textEdit.setText(self.task.ques_descr)
 		self.Answer.clear()
 		self.Answer.setFocus()
@@ -54,6 +55,7 @@ class MainForm(QtGui.QMainWindow):
 			self.set_text(self.task.get_list(), self.coach.cur_weight());
 			self.frame_2.show()
 			self.setSound('sound')
+			self.PlaySound()
 			self.state = 0
 		else:
 			self.words_count += 1
@@ -63,7 +65,6 @@ class MainForm(QtGui.QMainWindow):
 		self.setStat()
 
 	def setSound(self, field):
-		print field
 		if hasattr(self.task, field) and getattr(self.task, field):
 			self.sound = getattr(self.task, field)
 			self.PlayButton.show()
@@ -79,6 +80,7 @@ class MainForm(QtGui.QMainWindow):
 		print 'gui try delete task: ' + str(hash(self.task))
 		self.coach.delete(self.task)
 		self.setQuestion()
+		self.setStat()
 
 	def set_text(self, data, status):
 		s = self.templ
