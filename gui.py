@@ -31,7 +31,7 @@ class MainForm(QtGui.QMainWindow):
 			self.deleteItem)
 		self.connect(self.PlayButton, QtCore.SIGNAL("clicked()"),
 			self.PlaySound)
- 
+
 	def setQuestion(self):
 		self.task = self.coach_iter.next()
 		self.Question.setText(self.task.question)
@@ -55,7 +55,6 @@ class MainForm(QtGui.QMainWindow):
 			self.set_text(self.task.get_list(), self.coach.cur_weight());
 			self.frame_2.show()
 			self.setSound('sound')
-			self.PlaySound()
 			self.state = 0
 		else:
 			self.words_count += 1
@@ -79,8 +78,11 @@ class MainForm(QtGui.QMainWindow):
 	def deleteItem(self):
 		print 'gui try delete task: ' + str(hash(self.task))
 		self.coach.delete(self.task)
-		self.setQuestion()
-		self.setStat()
+		if self.state:
+			self.setQuestion()
+			self.setStat()
+		else:
+			self.answerReady()
 
 	def set_text(self, data, status):
 		s = self.templ
