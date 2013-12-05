@@ -227,7 +227,7 @@ class Coach(object):
 				self.cur_reset()
 
 	def __pop(self, qitem, index):
-		item = qitem.data.pop(qitem.data.index(index))
+		item = qitem.data.pop(index)
 		if qitem.data.sum_weight() == 0:
 			qitem.dec(qitem.max_weight())
 		return item
@@ -247,7 +247,8 @@ class Coach(object):
 
 				r = random.randint(1, qitem.data.sum_weight())
 				self.__log('r = %i (%i)' % (r, qitem.data.sum_weight()));
-				self.__cur_item = self.__pop(qitem, r)
+				i = qitem.data.index(r)
+				self.__cur_item = self.__pop(qitem, i)
 
 			yield self.__cur_item.data
 			self.__to_deferred()
@@ -321,14 +322,14 @@ class Coach(object):
 			for (iq, q) in enumerate(self.__queues):
 				for (i,d) in enumerate(q.data):
 					if d == task:
-						self.__log(u"Delete {}".format(task.question))
+						self.__log(u"Delete from queues {}".format(task.question))
 						self.__pop(q, i)
 						if iq == 0:
 							self.__new_count -= 1
 						return
 			for (i, d) in enumerate(self.__deferred):
 				if d[0] == task:
-					self.__log(u"Delete {}".format(task.question))
+					self.__log(u"Delete from deferred {}".format(task.question))
 					self.__deferred.pop(i)
 					if d[1] == 0:
 						self.__new_count -= 1
@@ -336,9 +337,14 @@ class Coach(object):
 			for l in self.__wait_list:
 				for (i,d) in enumerate(l):
 					if d == task:
-						self.__log(u"Delete {}".format(task.question))
+						self.__log(u"Delete from wait_list {}".format(task.question))
 						l.pop(i)
 						return
+	def tmp(self):
+		self.cur_reset()
+#		self.__items[hash( self.__queues[0].data[3].data)] = self.__queues[0].data[3]
+#		self.delete(self.__queues[0].data[3].data)
+		print self.__queues[0].data[3].data.question
 
 def load(file_name):
 	if not os.path.exists(file_name):
@@ -476,7 +482,7 @@ class CoachTestCase(unittest.TestCase):
 
 		items.append(Task(6, '', 6, ''))
 		task7 = Task(7, '', 7, '')
-		c1.add([items[-1], task7])
+		c1.add([task7, items[-1]])
 
 		for i in items:
 			c1.delete(i)
