@@ -14,6 +14,8 @@ import gui
 
 FileName = 'dicts/lingualeo.st2'
 
+#http://lingualeo.ru/glossary/getGlossary?glossaryId=244&_hash=20131129154330
+
 def getresponse(conn):
 	response = conn.getresponse()
 	if response.status == 200:
@@ -27,6 +29,7 @@ class remote_dict(object):
 
 	host="lingualeo.ru"
 	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1"}\
+#	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1"}\
 
 	def __init__(self):
 		self.conn = httplib.HTTPConnection(self.host)
@@ -52,10 +55,20 @@ class remote_dict(object):
 			else:
 				break
 
+class remote_verbs(remote_dict):
+	def __iter__(self):
+		self.conn.request('GET', '/glossary/getGlossary?glossaryId=244&_hash={hash}'.format(hash=self.gethash()), headers=self.header) 
+		data = json.loads(getresponse(self.conn))
+		for word in data['glossary']['glossaryWords'].itervalues():
+			yield word
+
 class dicts:
 
 	def __init__(self):
-		self.dicts = {'en': coach.Coach(), 'ru': coach.Coach()}
+		self.dicts = {
+				'en': coach.Coach(), 
+				'ru': coach.Coach()
+			}
 		self.last_update = None
 		self.update()
 
@@ -66,7 +79,24 @@ class dicts:
 		self.dicts['ru'].set_priority(self.dicts['en'])
 		self.dicts['en'].set_priority(self.dicts['ru'])
 
+	def import_verbs(self):
+		self.dicts['verbs'] = coach.Coach()
+		for verb in remote_verbs():
+			(v1, v2v3) = verb['word_value'].split(', ', 1)
+			self.dicts['verbs'].add([coach.Task({
+				'question'		: v1,
+				'ques_descr'	: u'Введите II, III формы глагола',
+				'answer'		: verb['word_value'],
+				'answer_list'	: [v2v3],
+				'description'	: u'[{}]\n{}'.format(verb['transcription'], verb['translate_value']),
+				'sound'			: verb['sound_url']
+			})])
+
 	def update(self):
+		self.dict_update()
+		if 'verbs' not in self.dicts: self.import_verbs()
+
+	def dict_update(self):
 		if self.last_update and time.time() < self.last_update + 60*60:
 			print "Data is fresh"
 			return
@@ -78,19 +108,29 @@ class dicts:
 					return
 				print group['data']
 				for word in group['words']:
-					self.dicts['en'].add([coach.Task({
-						'question'		: word['word_value'], 
-						'ques_descr'	: u"[{}]\n{}".format(word['transcription'], word['context']),
-						'ques_sound'	: word['sound_url'],
-						'answer'		: word['user_translates'][0]['translate_value'],
-						'answer_list'	: re.split(r'[,;]\s*', word['user_translates'][0]['translate_value'].lower())
-					})])
 					self.dicts['ru'].add([coach.Task({
-						'answer'		: word['word_value'], 
+						'answer'		: word['word_value'].lower(), 
 						'_hash'			: word['word_value'], 
 						'description'	: u"[{}]\n{}".format(word['transcription'], word['context']),
 						'sound'			: word['sound_url'],
 						'question'		: word['user_translates'][0]['translate_value']
+					})])
+					a =  word['user_translates'][0]['translate_value'] 
+					al = re.split(r'[,;]\s*', a.lower()) 
+					if a.find(u'ё') > -1:
+						tst = re.split(r'[,;]\s*', al)
+						for w in al:
+							if w.find(u'ё') >-1:
+								s = w.replace(u'ё', u'е')
+								tst.append(s)
+								a += u', '+s
+						al = tst
+					self.dicts['en'].add([coach.Task({
+						'question'		: word['word_value'], 
+						'ques_descr'	: u"[{}]\n{}".format(word['transcription'], word['context']),
+						'ques_sound'	: word['sound_url'],
+						'answer'		: a,
+						'answer_list'	: al
 					})])
 		self.last_update = time.time()
 
@@ -105,20 +145,12 @@ def save(_dicts):
 		pickle.dump(_dicts, f)
 
 def main():
-	if len(sys.argv) < 2 or sys.argv[1] not in ('en', 'ru'):
-		raise Exception('usage: %s [en|ru]' % sys.argv[0])
+	if len(sys.argv) < 2 or sys.argv[1] not in ('en', 'ru', 'verbs'):
+		raise Exception('usage: %s [en|ru|verbs]' % sys.argv[0])
 	_dicts = load()
 	if len(sys.argv) >= 3 and sys.argv[2] == 'update':
+		_dicts.import_verbs()
 		pass
-#		for i in _dicts.get('en').items().itervalues():
-#			if i.data.answer.find(u'ё') > -1:
-#				tst = re.split(r'[,;]\s*', i.data.answer)
-#				for w in i.data.answer_list:
-#					if w.find(u'ё') >-1:
-#						s = w.replace(u'ё', u'е')
-#						tst.append(s)
-#						i.data.answer += u', '+s
-#				i.data.answer_list = tst
 	else:
 		_dicts.sync()
 		_dicts.update()
