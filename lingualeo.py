@@ -28,7 +28,7 @@ def getresponse(conn):
 class remote_dict(object):
 
 	host="lingualeo.ru"
-	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1"}\
+	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1;newYear2014_promo_seen=1;promo_redirect_newYear2014_seen=1;"}\
 #	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1"}\
 
 	def __init__(self):
@@ -72,12 +72,15 @@ class dicts:
 		self.last_update = None
 		self.update()
 
-	def get(self, lang):
+	def __getitem__(self, lang):
 		return self.dicts[lang]
 
 	def sync(self):
-		self.dicts['ru'].set_priority(self.dicts['en'])
-		self.dicts['en'].set_priority(self.dicts['ru'])
+		l = ('ru', 'en', 'verbs')
+		for i1 in l:
+			for i2 in l:
+				if i1 != i2:
+					self.dicts[i1].set_priority(self.dicts[i2])
 
 	def import_verbs(self):
 		self.dicts['verbs'] = coach.Coach()
@@ -144,17 +147,55 @@ def save(_dicts):
 	with open(FileName, 'w') as f:
 		pickle.dump(_dicts, f)
 
+def add_ru_translate(_dicts, words):
+	_dicts['ru'].items()[hash(_dicts['en'].cur_item())].data.question += u', '.join([u'']+words)
+	_dicts['en'].cur_item().answer += u', '.join([u'']+words)
+	for word in words:
+		_dicts['en'].cur_item().answer_list.append(word)
+
+def change_ru_translate(_dicts, words):
+	_dicts['en'].cur_item().answer = u', '.join(words)
+	_dicts['en'].cur_item().answer_list = (words)
+	_dicts['ru'].items()[hash(_dicts['en'].cur_item())].data.question = u', '.join(words)
+	print ' '.join(_dicts['en'].cur_item().answer_list)
+
+def split_ru_translate(_dicts):
+	a = _dicts['en'].cur_item().answer
+	_dicts['en'].cur_item().answer_list = re.split(r'[,;]\s*', a.lower())
+	print ' '.join(_dicts['en'].cur_item().answer_list) 
+
+
+def add_verbs(_dicts):
+	for i in _dicts['verbs'].items().itervalues():
+		d = i.data
+		trans, answer = d.description.split("\n")
+		trans = trans.split(' ', 1)[0]+']'
+		print d.question, trans, answer
+		_dicts['en'].add([coach.Task({
+				'question'		: d.question,
+				'ques_descr'	: u"{}\nverbs".format(trans),
+				'answer'		: answer
+				})])
+		_dicts['ru'].add([coach.Task({
+				'answer'		: d.question,
+				'description'	: u"{}\nverbs".format(trans),
+				'question'		: answer,
+				'_hash'			: d.question
+				})])
 def main():
-	if len(sys.argv) < 2 or sys.argv[1] not in ('en', 'ru', 'verbs'):
-		raise Exception('usage: %s [en|ru|verbs]' % sys.argv[0])
+	if len(sys.argv) < 2 or sys.argv[1] not in ('en', 'ru', 'verbs', 'update'):
+		raise Exception('usage: %s [en|ru|verbs|update]' % sys.argv[0])
 	_dicts = load()
-	if len(sys.argv) >= 3 and sys.argv[2] == 'update':
-		_dicts.import_verbs()
+	if len(sys.argv) > 1 and sys.argv[1] == 'update':
+#		split_ru_translate(_dicts)
+		add_ru_translate(_dicts, [u'отдых'])
+#		change_ru_translate(_dicts, [u'дать', u'давать', u'отдавать'])
+#
 		pass
 	else:
 		_dicts.sync()
 		_dicts.update()
-		gui.start(_dicts.get(sys.argv[1]))
+		gui.start(_dicts[(sys.argv[1])])
 
 	save(_dicts)
 
