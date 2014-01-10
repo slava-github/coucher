@@ -184,6 +184,7 @@ class Coach(object):
 		self.__oppinut = self.__queues[-1].data
 		self.__cur_item = None
 		self.__cut_queue_index = None
+		self.__cur_new = 0
 		self.file_name = None
 		if data: self.add(data)
 
@@ -204,6 +205,7 @@ class Coach(object):
 		for _list in reversed(self.__wait_list):
 			if _list:
 				self.__log('+1')
+				self.__cur_new = 1
 				self.__new_count += 1
 				item = _list.pop(random.randint(0, len(_list)-1))
 				return item
@@ -213,6 +215,7 @@ class Coach(object):
 			self.__add_in_queue(self.__cur_item, self.__cur_queue_index)
 			self.__cur_item = None
 			self.__cur_queue_index = None
+			self.__cur_new = 0
 
 	def __to_deferred(self):
 		if self.__cur_item != None:
@@ -223,6 +226,7 @@ class Coach(object):
 				self.__deferred.append([self.__cur_item, self.__cur_queue_index])
 				self.__cur_item = None
 				self.__cur_queue_index = None
+				self.__cur_new = 0
 			else:
 				self.cur_reset()
 
@@ -296,6 +300,12 @@ class Coach(object):
 
 	def cur_weight(self):
 		return self.__cur_item.weight() + (len(self.__queues) - 2 - self.__cur_queue_index)*MAX_WEIGHT
+
+	def cur_item(self):
+		return self.__cur_item.data
+
+	def cur_new(self):
+		return self.__cur_new
 
 	def items(self):
 		return self.__items
@@ -399,6 +409,7 @@ class CoachTestCase(unittest.TestCase):
 		for n in range(3):
 			item = next(i)
 			self.assertEqual(c.new_count(), n+1)
+			self.assertEqual(c.cur_new(), 1)
 			self.assertIn(item, _list)
 			self.assertNotIn(item, old)
 			old.append(item)
