@@ -3,6 +3,35 @@
 from PyQt4 import QtCore, QtGui, uic  # подключает основные модули PyQt
 import playmp3
 
+class App(QtGui.QApplication):
+
+	def __init__(self, coach):
+		super(App, self).__init__([])
+		self.coach = coach
+		self.form = MainForm(coach)
+
+		self.connect(self.form.TEdit, QtCore.SIGNAL("clicked()"),
+			self.taskEdit)
+
+		self.form.show()
+
+	def taskEdit(self):
+		self.__editForm = EditForm(self.coach.cur_item())
+		self.__editForm.show()
+
+class EditForm(QtGui.QDialog):
+
+	def __init__(self, task):
+		super(EditForm, self).__init__()
+		uic.loadUi("ui/taskEditor.ui", self)
+
+		self.Question.setText(task.question)
+		self.QuestDesc.setHtml(task.ques_descr)
+		self.Answer.setText(task.answer)
+		self.AnswerDesc.setHtml(task.description)
+		if len(task.answer_list) > 2:
+			self.CBsplit.setChecked(True)
+		
 # прототип главной формы
 class MainForm(QtGui.QMainWindow):
 
@@ -12,6 +41,7 @@ class MainForm(QtGui.QMainWindow):
 
 		self.templ = (self.Text.toHtml().toUtf8()).data().decode('utf8')
 		self.frame_2.hide()
+		self.LNew.hide()
 		self.state = 1
 
 
@@ -40,6 +70,11 @@ class MainForm(QtGui.QMainWindow):
 		self.Answer.clear()
 		self.Answer.setFocus()
 		self.setSound('ques_sound')
+		if self.coach.cur_new():
+			self.LNew.show()
+		else:
+			self.LNew.hide()
+
 
 	def answerReady(self):
 		if self.state:
@@ -117,8 +152,5 @@ class MainForm(QtGui.QMainWindow):
 
 
 def start(coach):
-	app = QtGui.QApplication([])  # создаёт основной объект программы
-	form = MainForm(coach)  # создаёт объект формы
-	form.show()  # даёт команду на отображение объекта формы и содержимого
-	app.exec_()  # запускает приложение
+	App(coach).exec_()
 
