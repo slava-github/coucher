@@ -7,31 +7,32 @@ class App(QtGui.QApplication):
 
 	def __init__(self, coach):
 		super(App, self).__init__([])
-		self.coach = coach
 		self.form = MainForm(coach)
-
-		self.connect(self.form.TEdit, QtCore.SIGNAL("clicked()"),
-			self.taskEdit)
-
 		self.form.show()
-
-	def taskEdit(self):
-		self.__editForm = EditForm(self.coach.cur_item())
-		self.__editForm.show()
 
 class EditForm(QtGui.QDialog):
 
 	def __init__(self, task):
 		super(EditForm, self).__init__()
+
+		self.task = task
 		uic.loadUi("ui/taskEditor.ui", self)
 
 		self.Question.setText(task.question)
-		self.QuestDesc.setHtml(task.ques_descr)
+		self.QuestDesc.setText(task.ques_descr)
 		self.Answer.setText(task.answer)
-		self.AnswerDesc.setHtml(task.description)
+		self.AnswerDesc.setText(task.description)
 		if len(task.answer_list) > 2:
 			self.CBsplit.setChecked(True)
-		
+		self.connect(self.buttonBox, QtCore.SIGNAL("accepted()"),
+			self.ok)
+
+	def ok(self):
+		self.task.question = str(self.Question.text().toUtf8()).decode('utf8')
+		self.task.ques_descr = str(self.QuestDesc.toPlainText().toUtf8()).decode('utf8')
+		self.task.answer = str(self.Answer.text().toUtf8()).decode('utf8')
+		self.task.description = str(self.AnswerDesc.toPlainText().toUtf8()).decode('utf8')
+
 # прототип главной формы
 class MainForm(QtGui.QMainWindow):
 
@@ -55,6 +56,8 @@ class MainForm(QtGui.QMainWindow):
 		self.setQuestion()
 		self.setStat()
 
+		self.connect(self.TEdit, QtCore.SIGNAL("clicked()"),
+			self.taskEdit)
 		self.connect(self.OkButton, QtCore.SIGNAL("clicked()"),
 			self.answerReady)
 		self.connect(self.DeleteButton, QtCore.SIGNAL("clicked()"),
@@ -64,9 +67,7 @@ class MainForm(QtGui.QMainWindow):
 
 	def setQuestion(self):
 		self.task = self.coach_iter.next()
-		self.Question.setText(self.task.question)
-		self.Question.home(False)
-		self.textEdit.setText(self.task.ques_descr)
+		self.taskUpdated()
 		self.Answer.clear()
 		self.Answer.setFocus()
 		self.setSound('ques_sound')
@@ -87,7 +88,7 @@ class MainForm(QtGui.QMainWindow):
 				self.coach.error()
 				self.error_count += 1
 				self.show_no()
-			self.set_text(self.task.get_list(), self.coach.cur_weight());
+			self.Status.setText(str(self.coach.cur_weight()))
 			self.frame_2.show()
 			self.setSound('sound')
 			self.state = 0
@@ -119,12 +120,6 @@ class MainForm(QtGui.QMainWindow):
 		else:
 			self.answerReady()
 
-	def set_text(self, data, status):
-		s = self.templ
-		for key, val in zip(['Question', 'question_desc', 'Answer', 'answer_desc'], data):
-			s = s.replace('$%s$' % key, val.replace('\n', "<br>"))
-		self.Text.setHtml(s)
-		self.Status.setText(str(status))
 
 	def show_ok(self):
 		self.lOk.show()
@@ -134,6 +129,15 @@ class MainForm(QtGui.QMainWindow):
 		self.lNo.show()
 		self.lOk.hide()
 	
+	def taskUpdated(self):
+		self.Question.setText(self.task.question)
+		self.Question.home(False)
+		self.textEdit.setText(self.task.ques_descr)
+		s = self.templ
+		for key, val in zip(['Question', 'question_desc', 'Answer', 'answer_desc'], self.task.get_list()):
+			s = s.replace('$%s$' % key, val.replace('\n', "<br>"))
+		self.Text.setHtml(s)
+
 	def setStat(self):
 		self.tableWidget.item(0, 0).setText(str(self.words_count))
 		self.tableWidget.item(0, 1).setText(str(self.ok_count))
@@ -150,6 +154,12 @@ class MainForm(QtGui.QMainWindow):
 		self.tableWidget.item(0, 5).setText(str(self.coach.studied_count()))
 		self.tableWidget.item(0, 6).setText(str(self.coach.lesson_count()))
 
+
+	def taskEdit(self):
+		edit_form = EditForm(self.task)
+		edit_form.exec_()
+		if edit_form.result():
+			self.taskUpdated()
 
 def start(coach):
 	App(coach).exec_()
