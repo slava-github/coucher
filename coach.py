@@ -6,6 +6,7 @@ import os
 import sys
 import pickle
 import time
+import re
 
 NEW_ITEMS = 5
 QUEUES = 3
@@ -350,11 +351,6 @@ class Coach(object):
 						self.__log(u"Delete from wait_list {}".format(task.question))
 						l.pop(i)
 						return
-	def tmp(self):
-		self.cur_reset()
-#		self.__items[hash( self.__queues[0].data[3].data)] = self.__queues[0].data[3]
-#		self.delete(self.__queues[0].data[3].data)
-		print self.__queues[0].data[3].data.question
 
 def load(file_name):
 	if not os.path.exists(file_name):
@@ -377,17 +373,29 @@ class Task(object):
 			self.question, self.ques_descr, self.answer, self.description = prop
 			self._hash = self.question
 		if not hasattr(self, 'answer_list') or not self.answer_list:
-			self.answer_list = [self.answer]
+			self.answer_list = self.normalize_answer(',;')
 
 	def get_list(self):
 		return [self.question, self.ques_descr, self.answer, self.description]
 
 	def __eq__(self, answer):
-		return answer in self.answer_list
+		return answer.lower() in self.answer_list
 
 	def __hash__(self):
 		return hash(self._hash)
 
+	def normalize_answer(self, delimiter = None):
+		s = self.answer.lower()
+		if delimiter:
+			result = re.split(r'['+delimiter+']\s*', s)
+		else:
+			result = [s]
+		addition = []
+		for w in result:
+			if w.find(u'ё') >-1:
+				s = w.replace(u'ё', u'е')
+				addition.append(s)
+		return result + addition
 
 import unittest
 
