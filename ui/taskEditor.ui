@@ -62,13 +62,6 @@
      <item>
       <widget class="QLineEdit" name="Answer"/>
      </item>
-     <item>
-      <widget class="QCheckBox" name="CBsplit">
-       <property name="text">
-        <string>Разделить</string>
-       </property>
-      </widget>
-     </item>
     </layout>
    </item>
    <item>

@@ -8,7 +8,7 @@ import sys
 def init(c):
 	for i in range(10):
 		for j in range(10):
-			c.add([coach.Task("{}x{}=".format(i, j), '', str(i*j), '')])
+			c.add(coach.Task("{}x{}=".format(i, j), '', str(i*j), ''))
 
 if __name__ == '__main__':
 	

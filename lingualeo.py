@@ -63,6 +63,12 @@ class remote_verbs(remote_dict):
 		for word in data['glossary']['glossaryWords'].itervalues():
 			yield word
 
+def answer_split(s):
+	s = s.replace(';', ',')
+	delim = '.' if s.find('.') > -1 else ','
+	s = re.split(r' ?['+delim+r'] ?', s)
+	return (s, delim)
+
 class dicts:
 
 	def __init__(self):
@@ -89,6 +95,7 @@ class dicts:
 		if self.last_update and time.time() < self.last_update + 60*60:
 			print "Data is fresh"
 			return
+		print 'Get dictionary...'
 		for data in remote_dict():
 			for group in data['userdict3']:
 				date = int(group['data'].split(":", 1)[1])
@@ -97,6 +104,7 @@ class dicts:
 					return
 				print group['data']
 				for word in group['words']:
+					(translate, delim) = answer_split(word['user_translates'][0]['translate_value'])
 					struct = {
 						'question': {
 							'string': word['word_value'].lower(),
@@ -104,9 +112,10 @@ class dicts:
 							'sound'	: word['sound_url'],
 						},
 						'answer': {
-							'string': word['user_translates'][0]['translate_value'],
-							'desc'	: '',
-							'sound'	: word['sound_url'],
+							'list'		: translate,
+							'delimiter' : delim,
+							'desc'		: '',
+							'sound'		: word['sound_url'],
 						}
 					}
 					self.dicts.append(struct)
@@ -114,9 +123,11 @@ class dicts:
 
 	def import_verbs(self):
 		if self.verbs: return
+		print "Get Verbs..."
 		for verb in remote_verbs():
 			(v1, v2v3) = verb['word_value'].split(', ', 1)
 			if v1 not in self.dicts:
+				(translate, delim) = answer_split(verb['word_value'])
 				struct = {
 					'question':{
 						'string': v1,
@@ -124,9 +135,10 @@ class dicts:
 						'sound'	: verb['sound_url']
 					},
 					'answer':{
-						'answer': verb['word_value'],
-						'descr'	: u'[{}]\n{}'.format(verb['transcription'], verb['translate_value']),
-						'sound'	: verb['sound_url']
+						'answer'	: translate,
+						'delimiter'	: delim,
+						'descr'		: u'[{}]\n{}'.format(verb['transcription'], verb['translate_value']),
+						'sound'		: verb['sound_url']
 					}
 				}
 			else:

@@ -259,7 +259,7 @@ class Coach(object):
 			self.__to_deferred()
 
 	def add(self, data):
-		for i in data:
+		for i in data if type(data) is list else [data]:
 			item = Item(i)
 			if hash(item) not in self.__items:
 				self.__wait_list[0].append(item)
@@ -363,39 +363,86 @@ def save(file_name, coach):
 		pickle.dump(coach, f)
 
 class Task(object):
-
+#
+#question
+#	string
+#	desc
+#	sound
+#answer
+#	list
+#	desc
+#	sound
+#
 	def __init__(self, *prop):
 		if len(prop) == 1 and type(prop[0]) is dict:
-			for name in ('question', 'ques_descr', 'ques_sound', 'answer', 'answer_list', 'description', 'sound'):
-				self.__setattr__(name, prop[0][name] if name in prop[0] else '')
-			self._hash = prop[0].get('_hash', self.question)
+			self.data = prop
+			if 'hash' is prop:
+				self._hash = prop.pop('hash')
+			else:
+				self._hash = prop['question']['string']
 		else:
-			self.question, self.ques_descr, self.answer, self.description = prop
-			self._hash = self.question
-		if not hasattr(self, 'answer_list') or not self.answer_list:
-			self.answer_list = self.normalize_answer(',;')
+			self.data = {
+				'question' : {
+					'string': prop[0],
+					'desc'	: prop[1],
+				},
+				'answer' : {
+					'list': prop[2],
+					'desc': prop[3]
+				}
+			}
+			self._hash = prop[0]
+		if type(self.data['answer']['list']) is not list:
+			self.data['answer']['list'] = [self.data['answer']['list']]
+		self.normalize_answer()
+
+	def get(self, key, name):
+		return self.data[key][name]
+
+	def set(self, key, name, val):
+		self.data[key][name] = val
+		if (key, name) == ('answer', 'list'):
+			self.normalize_answer()
+
+	def question(self, key, data=None):
+		if data != None:
+			self.set('question', key, data)
+		else:
+			return self.get('question',key)
+
+	def answer(self, key, data=None):
+		if data != None:
+			self.set('answer', key, data)
+			if key == 'list': self.normalize_answer()
+		else:
+			return self.get('answer',key)
+
+	def sound(self, key):
+		try:
+			return self.get(key,'sound')
+		except KeyError:
+			return None
 
 	def get_list(self):
-		return [self.question, self.ques_descr, self.answer, self.description]
+		return [
+				self.question('string'),
+				self.question('desc'),
+				self.answer('list'),
+				self.answer('desc')
+		]
 
 	def __eq__(self, answer):
-		return answer.lower() in self.answer_list
+		return answer in self.norm_answer
 
 	def __hash__(self):
 		return hash(self._hash)
 
-	def normalize_answer(self, delimiter = None):
-		s = self.answer.lower()
-		if delimiter:
-			result = re.split(r'['+delimiter+']\s*', s)
-		else:
-			result = [s]
+	def normalize_answer(self):
 		addition = []
-		for w in result:
-			if w.find(u'ё') >-1:
-				s = w.replace(u'ё', u'е')
-				addition.append(s)
-		return result + addition
+		for w in self.answer('list'):
+			if type(w) in (str, unicode) and w.find(u'ё') >-1:
+				addition.append(w.replace(u'ё', u'е'))
+		self.norm_answer = self.answer('list') + addition
 
 import unittest
 

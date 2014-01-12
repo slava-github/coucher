@@ -18,22 +18,18 @@ class EditForm(QtGui.QDialog):
 		self.task = task
 		uic.loadUi("ui/taskEditor.ui", self)
 
-		self.Question.setText(task.question)
-		self.QuestDesc.setText(task.ques_descr)
-		self.Answer.setText(task.answer)
-		self.AnswerDesc.setText(task.description)
-		if len(task.answer_list) > 2:
-			self.CBsplit.setChecked(True)
-		self.connect(self.buttonBox, QtCore.SIGNAL("accepted()"),
-			self.ok)
+		self.Question.setText(task.question('string'))
+		self.QuestDesc.setText(task.question('desc'))
+		self.Answer.setText(' | '.join(task.answer('list')))
+		self.AnswerDesc.setText(task.answer('desc'))
 
-	def ok(self):
-		self.task.question = str(self.Question.text().toUtf8()).decode('utf8')
-		self.task.ques_descr = str(self.QuestDesc.toPlainText().toUtf8()).decode('utf8')
-		self.task.answer = str(self.Answer.text().toUtf8()).decode('utf8')
-		self.task.description = str(self.AnswerDesc.toPlainText().toUtf8()).decode('utf8')
+	def accept(self):
+		self.task.question('string', str(self.Question.text().toUtf8()).decode('utf8'))
+		self.task.question('desc', str(self.QuestDesc.toPlainText().toUtf8()).decode('utf8'))
+		self.task.answer('list', str(self.Answer.text().toUtf8()).decode('utf8').split(' | '))
+		self.task.answer('desc', str(self.AnswerDesc.toPlainText().toUtf8()).decode('utf8'))
+		super(EditForm, self).accept()
 
-# прототип главной формы
 class MainForm(QtGui.QMainWindow):
 
 	def __init__(self, coach):
@@ -70,7 +66,7 @@ class MainForm(QtGui.QMainWindow):
 		self.taskUpdated()
 		self.Answer.clear()
 		self.Answer.setFocus()
-		self.setSound('ques_sound')
+		self.setSound('question')
 		if self.coach.cur_new():
 			self.LNew.show()
 		else:
@@ -80,7 +76,7 @@ class MainForm(QtGui.QMainWindow):
 	def answerReady(self):
 		if self.state:
 			ans = self.Answer.text()
-			if self.task == ans.toUtf8().data().decode('utf8'):
+			if self.task == ans.toUtf8().data().decode('utf8').lower():
 				self.coach.ok()
 				self.ok_count += 1
 				self.show_ok()
@@ -90,7 +86,7 @@ class MainForm(QtGui.QMainWindow):
 				self.show_no()
 			self.Status.setText(str(self.coach.cur_weight()))
 			self.frame_2.show()
-			self.setSound('sound')
+			self.setSound('answer')
 			self.state = 0
 		else:
 			self.words_count += 1
@@ -100,11 +96,10 @@ class MainForm(QtGui.QMainWindow):
 		self.setStat()
 
 	def setSound(self, field):
-		if hasattr(self.task, field) and getattr(self.task, field):
-			self.sound = getattr(self.task, field)
+		self.sound = self.task.sound(field) 
+		if self.sound:
 			self.PlayButton.show()
 		else:
-			self.sound = None
 			self.PlayButton.hide()
 
 	def PlaySound(self):
@@ -130,11 +125,13 @@ class MainForm(QtGui.QMainWindow):
 		self.lOk.hide()
 	
 	def taskUpdated(self):
-		self.Question.setText(self.task.question)
+		self.Question.setText(self.task.question('string'))
 		self.Question.home(False)
-		self.textEdit.setText(self.task.ques_descr)
+		self.textEdit.setText(self.task.question('desc'))
+		data = self.task.get_list()
+		data[2] = ', '.join(data[2])
 		s = self.templ
-		for key, val in zip(['Question', 'question_desc', 'Answer', 'answer_desc'], self.task.get_list()):
+		for key, val in zip(['Question', 'question_desc', 'Answer', 'answer_desc'], data):
 			s = s.replace('$%s$' % key, val.replace('\n', "<br>"))
 		self.Text.setHtml(s)
 
