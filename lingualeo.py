@@ -10,6 +10,7 @@ import time
 
 import coach
 import gui
+import multidict
 
 
 FileName = 'dicts/lingualeo.st2'
@@ -28,7 +29,7 @@ def getresponse(conn):
 class remote_dict(object):
 
 	host="lingualeo.ru"
-	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1;newYear2014_promo_seen=1;promo_redirect_newYear2014_seen=1;"}\
+	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1;newYear2014_promo_seen=1;promo_redirect_january2014_seen=1;"}\
 #	header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1"}\
 
 	def __init__(self):
@@ -65,10 +66,8 @@ class remote_verbs(remote_dict):
 class dicts:
 
 	def __init__(self):
-		self.dicts = {
-				'en': coach.Coach(), 
-				'ru': coach.Coach()
-			}
+		self.dicts = multidict.MultiDict()
+		self.verbs = False
 		self.last_update = None
 		self.update()
 
@@ -82,22 +81,9 @@ class dicts:
 				if i1 != i2:
 					self.dicts[i1].set_priority(self.dicts[i2])
 
-	def import_verbs(self):
-		self.dicts['verbs'] = coach.Coach()
-		for verb in remote_verbs():
-			(v1, v2v3) = verb['word_value'].split(', ', 1)
-			self.dicts['verbs'].add([coach.Task({
-				'question'		: v1,
-				'ques_descr'	: u'Введите II, III формы глагола',
-				'answer'		: verb['word_value'],
-				'answer_list'	: [v2v3],
-				'description'	: u'[{}]\n{}'.format(verb['transcription'], verb['translate_value']),
-				'sound'			: verb['sound_url']
-			})])
-
 	def update(self):
 		self.dict_update()
-		if 'verbs' not in self.dicts: self.import_verbs()
+		self.import_verbs()
 
 	def dict_update(self):
 		if self.last_update and time.time() < self.last_update + 60*60:
@@ -111,31 +97,47 @@ class dicts:
 					return
 				print group['data']
 				for word in group['words']:
-					self.dicts['ru'].add([coach.Task({
-						'answer'		: word['word_value'].lower(), 
-						'_hash'			: word['word_value'], 
-						'description'	: u"[{}]\n{}".format(word['transcription'], word['context']),
-						'sound'			: word['sound_url'],
-						'question'		: word['user_translates'][0]['translate_value']
-					})])
-					a =  word['user_translates'][0]['translate_value'] 
-					al = re.split(r'[,;]\s*', a.lower()) 
-					if a.find(u'ё') > -1:
-						tst = re.split(r'[,;]\s*', al)
-						for w in al:
-							if w.find(u'ё') >-1:
-								s = w.replace(u'ё', u'е')
-								tst.append(s)
-								a += u', '+s
-						al = tst
-					self.dicts['en'].add([coach.Task({
-						'question'		: word['word_value'], 
-						'ques_descr'	: u"[{}]\n{}".format(word['transcription'], word['context']),
-						'ques_sound'	: word['sound_url'],
-						'answer'		: a,
-						'answer_list'	: al
-					})])
+					struct = {
+						'question': {
+							'string': word['word_value'].lower(),
+							'desc'	: u"[{}]\n{}".format(word['transcription'], word['context']),
+							'sound'	: word['sound_url'],
+						},
+						'answer': {
+							'string': word['user_translates'][0]['translate_value'],
+							'desc'	: '',
+							'sound'	: word['sound_url'],
+						}
+					}
+					self.dicts.append(struct)
 		self.last_update = time.time()
+
+	def import_verbs(self):
+		if self.verbs: return
+		for verb in remote_verbs():
+			(v1, v2v3) = verb['word_value'].split(', ', 1)
+			if v1 not in self.dicts:
+				struct = {
+					'question':{
+						'string': v1,
+						'desc'	: u'Неправильный глагол',
+						'sound'	: verb['sound_url']
+					},
+					'answer':{
+						'answer': verb['word_value'],
+						'descr'	: u'[{}]\n{}'.format(verb['transcription'], verb['translate_value']),
+						'sound'	: verb['sound_url']
+					}
+				}
+			else:
+				struct = self.dicts.base[v1]
+			struct['verb_forms'] = {
+				'string': v2v3,
+				'desc'	: u'[{}]\n{}'.format(verb['transcription'], verb['translate_value']),
+				'sound'	: verb['sound_url']
+			}
+			self.dicts.append(struct)
+		self.verbs = True
 
 def load():
 	if not os.path.exists(FileName):
@@ -187,8 +189,9 @@ def main():
 		raise Exception('usage: %s [en|ru|verbs|update]' % sys.argv[0])
 	_dicts = load()
 	if len(sys.argv) > 1 and sys.argv[1] == 'update':
+		print _dicts['verbs'].items()[hash('hear')].data.answer_list
 #		split_ru_translate(_dicts)
-		add_ru_translate(_dicts, [u'отдых'])
+#		add_ru_translate(_dicts, [u'отдых'])
 #		change_ru_translate(_dicts, [u'дать', u'давать', u'отдавать'])
 #
 		pass
