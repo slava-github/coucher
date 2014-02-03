@@ -127,7 +127,7 @@ class dicts:
 		for verb in remote_verbs():
 			(v1, v2v3) = verb['word_value'].split(', ', 1)
 			if v1 not in self.dicts:
-				(translate, delim) = answer_split(verb['word_value'])
+				(translate, delim) = answer_split(verb['translate_value'])
 				struct = {
 					'question':{
 						'string': v1,
@@ -135,9 +135,9 @@ class dicts:
 						'sound'	: verb['sound_url']
 					},
 					'answer':{
-						'answer'	: translate,
+						'list'		: translate,
 						'delimiter'	: delim,
-						'descr'		: u'[{}]\n{}'.format(verb['transcription'], verb['translate_value']),
+						'desc'		: u'Неправильный глагол',
 						'sound'		: verb['sound_url']
 					}
 				}
@@ -201,7 +201,8 @@ def main():
 		raise Exception('usage: %s [en|ru|verbs|update]' % sys.argv[0])
 	_dicts = load()
 	if len(sys.argv) > 1 and sys.argv[1] == 'update':
-		print _dicts['verbs'].items()[hash('hear')].data.answer_list
+		print (_dicts['en'].cur_item().answer('list')[0] == u'Чему быть, того не миновать')
+#		print _dicts['verbs'].items()[hash('hear')].data.answer_list
 #		split_ru_translate(_dicts)
 #		add_ru_translate(_dicts, [u'отдых'])
 #		change_ru_translate(_dicts, [u'дать', u'давать', u'отдавать'])
