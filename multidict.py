@@ -17,7 +17,7 @@ class smartTask(coach.Task):
 			if name == 'string':
 				s = self.data['answer']['delimiter']+' '
 				return s.join(self.data[key]['list'])
-			if name == 'sound':
+			if key == 'answer' and name == 'sound':
 				return None
 			if name == 'list':
 				return [self.data[key]['string']]
