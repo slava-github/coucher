@@ -176,6 +176,7 @@ class Coach(object):
 
 	def __init__(self, data = None, limit_new_items = NEW_ITEMS):
 		self.__log('init')
+		self.info = ''
 		self.__new_count = 0
 		self.limit_new_items = limit_new_items
 		self.__items = {}
@@ -246,12 +247,15 @@ class Coach(object):
 
 			if not self.__cur_item:
 				r = random.randint(1, self.__queues.sum_weight())
-				self.__log('qr = %i (%i)' % (r, self.__queues.sum_weight()));
+				self.info = s = 'qr = %i (%i)' % (r, self.__queues.sum_weight())
+				self.__log(s);
 				self.__cur_queue_index = self.__queues.index(r)
 				qitem = self.__queues[self.__cur_queue_index]
 
 				r = random.randint(1, qitem.data.sum_weight())
-				self.__log('r = %i (%i)' % (r, qitem.data.sum_weight()));
+				s = 'r = %i (%i)' % (r, qitem.data.sum_weight()) 
+				self.info = self.info + ' ' + s 
+				self.__log(s)
 				i = qitem.data.index(r)
 				self.__cur_item = self.__pop(qitem, i)
 

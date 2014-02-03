@@ -63,6 +63,7 @@ class MainForm(QtGui.QMainWindow):
 
 	def setQuestion(self):
 		self.task = self.coach_iter.next()
+		self.statusbar.showMessage(self.coach.info)
 		self.taskUpdated()
 		self.Answer.clear()
 		self.Answer.setFocus()
