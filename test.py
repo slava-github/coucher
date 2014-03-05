@@ -15,5 +15,5 @@ if __name__ == '__main__':
 	file_name = 'test.st'
 	c = coach.load(file_name)
 	if len(c) == 0:	init(c)
-	gui.start(c)
+	gui.main(c)
 	coach.save(file_name, c)

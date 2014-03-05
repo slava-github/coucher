@@ -9,8 +9,11 @@ import os
 import time
 
 import coach
-import gui
 import multidict
+
+from PyQt4 import QtGui
+import gui
+import mgui
 
 
 FileName = 'dicts/lingualeo.st2'
@@ -196,11 +199,9 @@ def add_verbs(_dicts):
 				'question'		: answer,
 				'_hash'			: d.question
 				})])
-def main():
-	if len(sys.argv) < 2 or sys.argv[1] not in ('en', 'ru', 'verbs', 'update'):
-		raise Exception('usage: %s [en|ru|verbs|update]' % sys.argv[0])
+def run(arg):
 	_dicts = load()
-	if len(sys.argv) > 1 and sys.argv[1] == 'update':
+	if arg == 'update':
 		print (_dicts['en'].cur_item().answer('list')[0] == u'Чему быть, того не миновать')
 #		print _dicts['verbs'].items()[hash('hear')].data.answer_list
 #		split_ru_translate(_dicts)
@@ -211,9 +212,23 @@ def main():
 	else:
 		_dicts.sync()
 		_dicts.update()
-		gui.start(_dicts[(sys.argv[1])])
+		gui.MainForm(_dicts[arg]).exec_()
 
 	save(_dicts)
+
+def main():
+	app = QtGui.QApplication([])
+	if len(sys.argv) < 2 or sys.argv[1] not in ('en', 'ru', 'verbs', 'update'):
+		form = mgui.MainForm()
+		while 1:
+			result = form.exec_()
+			if result:
+				run(result)
+			else:
+				break
+#		raise Exception('usage: %s [en|ru|verbs|update]' % sys.argv[0])
+	else:
+		run(sys.argv[1])
 
 if __name__ == '__main__':
 	main()

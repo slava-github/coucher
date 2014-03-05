@@ -3,13 +3,6 @@
 from PyQt4 import QtCore, QtGui, uic  # подключает основные модули PyQt
 import playmp3
 
-class App(QtGui.QApplication):
-
-	def __init__(self, coach):
-		super(App, self).__init__([])
-		self.form = MainForm(coach)
-		self.form.show()
-
 class EditForm(QtGui.QDialog):
 
 	def __init__(self, task):
@@ -30,7 +23,7 @@ class EditForm(QtGui.QDialog):
 		self.task.answer('desc', str(self.AnswerDesc.toPlainText().toUtf8()).decode('utf8'))
 		super(EditForm, self).accept()
 
-class MainForm(QtGui.QMainWindow):
+class MainForm(QtGui.QDialog):
 
 	def __init__(self, coach):
 		super(MainForm, self).__init__()
@@ -68,7 +61,7 @@ class MainForm(QtGui.QMainWindow):
 		self.Answer.clear()
 		self.Answer.setFocus()
 		self.setSound('question')
-		if self.coach.cur_new():
+		if self.coach.cur_isNew():
 			self.LNew.show()
 		else:
 			self.LNew.hide()
@@ -159,6 +152,9 @@ class MainForm(QtGui.QMainWindow):
 		if edit_form.result():
 			self.taskUpdated()
 
-def start(coach):
-	App(coach).exec_()
+def main(coach):
+	app = QtGui.QApplication([])
+	form = MainForm(coach)
+	form.show()
+	app.exec_()
 
