@@ -273,20 +273,19 @@ class Coach(object):
 		self.__log('ok')
 		self.__cur_item.dec()
 		if not self.__cur_item.weight():
-			self.__cur_item.inc(self.__cur_item.max_weight())
-			if self.__cur_queue_index == 0:
-				self.__new_count -= 1
 			if self.__cur_queue_index < len(self.__queues) - 1:
+				self.__cur_item.inc(self.__cur_item.max_weight())
 				self.__cur_queue_index += 1
+				if self.__cur_queue_index == 1:
+					self.__new_count -= 1
+			else:
+				self.__cur_item.inc
 
 	def error(self):
 		self.__log('error')
-		if self.__cur_queue_index:
-			self.__cur_queue_index -= 1
-			if self.__cur_queue_index == 0:
-				self.__new_count += 1
-		else:
-			self.__cur_item.inc(self.__cur_item.max_weight() - self.__cur_item.weight())
+		if self.__cur_queue_index: self.__new_count += 1
+		self.__cur_queue_index = 0
+		self.__cur_item.inc(self.__cur_item.max_weight() - self.__cur_item.weight())
 
 	def __len__(self):
 		return len(self.__items)
@@ -309,7 +308,7 @@ class Coach(object):
 	def cur_item(self):
 		return self.__cur_item.data
 
-	def cur_new(self):
+	def cur_isNew(self):
 		return self.__cur_new
 
 	def items(self):
@@ -468,7 +467,7 @@ class CoachTestCase(unittest.TestCase):
 		for n in range(3):
 			item = next(i)
 			self.assertEqual(c.new_count(), n+1)
-			self.assertEqual(c.cur_new(), 1)
+			self.assertEqual(c.cur_isNew(), 1)
 			self.assertIn(item, _list)
 			self.assertNotIn(item, old)
 			old.append(item)
@@ -501,24 +500,14 @@ class CoachTestCase(unittest.TestCase):
 	def testError(self):
 		_list = [1]
 		c = Coach(_list)
-		_iter = iter(c)
-		next(_iter)
-		for i in range(MAX_WEIGHT*QUEUES-1): c.ok()
-		next(_iter)
-		self.assertEqual(c.new_count(), 0)
-		for i in range(QUEUES-2): c.error()
-		self.assertEqual(c.new_count(), 0)
-		c.error()
-		self.assertEqual(c.new_count(), 1)
-		c.ok()
-		self.assertEqual(c.new_count(), 0)
-		for i in range(2): c.error()
-		self.assertEqual(c.new_count(), 1)
-		for i in range(MAX_WEIGHT-1): c.ok()
-		self.assertEqual(c.new_count(), 1)
-		c.ok()
-		self.assertEqual(c.new_count(), 0)
-		for i in range(MAX_WEIGHT*2): c.error()
+		for weight in range(1, MAX_WEIGHT*QUEUES): 
+			_iter = iter(c)
+			next(_iter)
+			for i in range(MAX_WEIGHT*QUEUES-weight): c.ok()
+			next(_iter)
+			c.error()
+			self.assertEqual(c.new_count(), 1)
+			self.assertEqual(c.cur_weight(), MAX_WEIGHT*QUEUES)
 
 	def testPrior(self):
 		_list = range(100)
