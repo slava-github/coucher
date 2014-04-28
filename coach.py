@@ -74,7 +74,7 @@ class Item(object):
 
     def dec(self, i=1):
         if self.__weight - i < 0:
-            raise MinWeight
+            raise MinWeight()
         self.__weight -= i
         self.last_update = time.time()
         if self.owner:
@@ -199,6 +199,7 @@ class Coach(object):
         self.__cur_item = None
         self.__cur_queue_index = None
         self.__cur_new = 0
+        self.__test = 1
         self.file_name = None
         if data:
             self.add(data)
@@ -214,6 +215,15 @@ class Coach(object):
         queue.data.append(item)
         if (not queue.weight()):
             queue.inc(queue.max_weight())
+
+    def _correct_queues_weight(self):
+        for item in self.__queues:
+            if len(item.data):
+                if len(item.data) < 4:
+                    item.dec(item.weight() - int(item.max_weight() * len(item.data) / 4.0))
+                elif item.weight() < item.max_weight():
+                    item.inc(item.max_weight() - item.weight())
+                return
 
     def __new_item(self):
         for _list in reversed(self.__wait_list):
@@ -241,13 +251,11 @@ class Coach(object):
                 self.__cur_item = None
                 self.__cur_queue_index = None
                 self.__cur_new = 0
-            else:
-                self.cur_reset()
 
     def __pop(self, qitem, index):
         item = qitem.data.pop(index)
         if qitem.data.sum_weight() == 0:
-            qitem.dec(qitem.max_weight())
+            qitem.dec(qitem.weight())
         return item
 
     def __iter__(self):
@@ -258,6 +266,7 @@ class Coach(object):
                 self.__cur_item = self.__new_item()
 
             if not self.__cur_item:
+                self._correct_queues_weight()
                 r = random.randint(1, self.__queues.sum_weight())
                 self.info = s = 'qr = %i (%i)' % (r, self.__queues.sum_weight())
                 self._log(s)
@@ -273,6 +282,7 @@ class Coach(object):
 
             yield self.__cur_item.data
             self.__to_deferred()
+            self.cur_reset()
 
     def add(self, data):
         for i in data if type(data) is list else [data]:
@@ -288,6 +298,7 @@ class Coach(object):
             if self.__cur_queue_index < len(self.__queues) - 1:
                 self.__cur_item.inc(self.__cur_item.max_weight())
                 self.__cur_queue_index += 1
+                self._log("next queue")
                 if self.__cur_queue_index == 1:
                     self.__new_count -= 1
             else:
@@ -571,6 +582,18 @@ class CoachTestCase(unittest.TestCase):
         self.assertEqual(c1.new_count(), 0)
         self.assertEqual([i1.next(), i1.next()], [task7, task7])
 
+    def testDecWeightQueue(self):
+        pass
+"""
+        c = Coach()
+        for i in range(1, QUEUES + 1):
+            c.add(i)
+            print "--", c._queues.sum_weight()
+            iter(c).next()
+            for _ in range((QUEUES - i) * MAX_WEIGHT):
+                c.ok()
+            print c.cur_weight()
+"""
 
 if __name__ == '__main__':
     import doctest
