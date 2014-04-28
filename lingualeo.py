@@ -34,8 +34,7 @@ def getresponse(conn):
 class RemoteDict(object):
 
     host = "lingualeo.ru"
-    header = {"Cookie": "remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1;newYear2014_promo_seen=1;promo_redirect_january2014_seen=1;"}
-#    header = {"Cookie":"remember=q=eyJzaWQiOiIwOWMxNTQwYWQxMDhjMDYzN2RjMDM5OWMwOWE1YWJiOCIsImVkIjoiIiwiYXRpbWUiOjEzODQ0NTU5MTIsInVpZCI6NTUzODM4OH0=&sig=1b7d54e5e734b0134572a62ad805d6bf3d3774c719712ea0d29dc9eb31ad653b; lotteryPromo_seen=1; lotteryPromoNew_seen=1"}\
+    header = {"Cookie": "lingualeouid=137898470726105; userid=5538388; servid=9d164a0a257a3d0d7a3669e6cf15a52b8ccf41ea1a5767f626fdaccbd97479b9840340dd59b1ff27; AWSELB=75C701150A9420ACA77B49A59BB2636792D3E5911E5E4FF2265D8AB1ABE56C8DFAABF4477CD9A02BF6901A6DF3885A0F9280A5D9D7DAAFCF9613C0F7B6A2A2DEFDC6AD67EE; fun_quest_wordset=11336; remember=54825400f81d2928a3c409ddc8b1d4a8dca3ecc9310f169a0c66ff7cd5cb00add75be52e03c1f7cd; fun_quest_completed=1; fun_quest_repaired=1; abmainv2=payment_timer;"}
 
     def __init__(self):
         self.conn = httplib.HTTPConnection(self.host)
@@ -43,16 +42,16 @@ class RemoteDict(object):
 
     def gethash(self):
         if not self._hash:
-            self.conn.request('GET', '/dashboard', headers=self.header)
-            data = getresponse(self.conn)
-            data = re.search(r'"serverHash":"(?P<hash>[0-9]+)"', data)
-            self._hash = data.group("hash")
+            self.conn.request('GET', '/ru/userdict/json', headers=self.header)
+            data = json.loads(getresponse(self.conn))
+#            data = re.search(r'"serverHash":"(?P<hash>[0-9]+)"', data)
+            self._hash = data["_hash"]
         return self._hash
 
     def __iter__(self):
         page = 1
         while True:
-            self.conn.request('GET', '/userdict/json?sortBy=date&wordType=0&filter=all&page={page}&_hash={hash}'.format(page=page, hash=self.gethash()), headers=self.header)
+            self.conn.request('GET', '/ru/userdict/json?sortBy=date&wordType=0&filter=all&page={page}&_hash={hash}'.format(page=page, hash=self.gethash()), headers=self.header)
             data = json.loads(getresponse(self.conn))
             yield data
             #attributes of pages
